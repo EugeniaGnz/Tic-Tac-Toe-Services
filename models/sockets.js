@@ -23,33 +23,39 @@ class Sockets {
 
             socket.on('makeMove', (data) => {
                 const { roomId, index } = data;
-
+            
                 const moveResult = this.juegos.makeMove(roomId, index, socket.id);
-
+            
                 if (moveResult) {
                     const { board, turn, winner, isDraw } = moveResult;
-
+            
                     if (winner) {
                         this.io.to(roomId).emit('gameEnd', { winner });
                         console.log(`Juego terminado`);
-
+                         //se elimina cuando pierde
                         this.juegos.removerJugadorPerdedor(socket.id, roomId, this.ListaDeEspera, this.JugadoresEnJuego);
-
+            
                     } else if (isDraw) {
                         this.io.to(roomId).emit('gameEnd', { winner: 'Empate' });
                         this.juegos.endGame(roomId);
                         console.log(`fue empate`);
-
+            
+                        this.juegos.removerJugadoresEmpate(roomId, this.ListaDeEspera, this.JugadoresEnJuego);
+                        this.juegos.resetGame(roomId);
+                        this.io.to(roomId).emit('gameReset', { board: Array(9).fill(null), turn: 'X' });
+                        console.log(`Nuevo jugador ${nuevoJugador.id} se unió a la sala ${roomId}`);
+            
                     } else {
                         this.io.to(roomId).emit('updateBoard', { board, turn });
                     }
                 }
             });
+            
 
             socket.on('resetGame', () => {
                 const roomId = [...socket.rooms].find(room => room !== socket.id);
                 if (roomId) {
-                    console.log(`Juego reiniciado en la sala ${roomId}`);
+                    console.log(`Juego reiniciado}`);
                     this.juegos.resetGame(roomId);
                     this.io.to(roomId).emit('gameReset', { board: Array(9).fill(null), turn: 'X' });
                 }
@@ -63,12 +69,12 @@ class Sockets {
 
                 const roomId = [...socket.rooms].find(room => room !== socket.id);
                 if (roomId && this.juegos.activeGames[roomId]) {
-                    this.io.to(roomId).emit('gameEnd', { message: 'El oponente se desconectó' });
+                    this.io.to(roomId).emit('gameEnd', { message: 'El jugador se desconectó' });
                     this.juegos.endGame(roomId);
                     //Si gana se va a el usuario a la lista de espera
                     this.juegos.removerJugadorPerdedor(socket.id, roomId, this.ListaDeEspera, this.JugadoresEnJuego);
 
-                    console.log(`Juego terminado en la sala ${roomId}, el oponente se desconectó`);
+                    console.log(`Juego terminado se desconecto el jugador`);
 
                 }
             });
