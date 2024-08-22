@@ -4,7 +4,8 @@ class Sockets {
     constructor(io) {
         this.io = io;
         this.ListaDeEspera = []; 
-        this.juegos = new Juegos(); 
+        this.JugadoresEnJuego = [];
+        this.juegos = new Juegos(io); 
 
         this.socketEvents();
     }
@@ -14,20 +15,10 @@ class Sockets {
             console.log('Jugador conectado:', socket.id);
 
             this.ListaDeEspera.push(socket);
-            console.log('Usuarios en lista en espera', this.ListaDeEspera.map(s => s.id));
-
+            console.log('Usuarios en lista de espera', this.ListaDeEspera.map(s => s.id));
+        
             if (this.ListaDeEspera.length >= 2) {
-                const jugador1 = this.ListaDeEspera.shift(); 
-                const jugador2 = this.ListaDeEspera.shift(); 
-             
-                const roomId = `${jugador1.id}+${jugador2.id}`; 
-                jugador1.join(roomId);
-                jugador2.join(roomId);
-
-                console.log(`Jugadores emparejados: ${jugador1.id} y ${jugador2.id} `);
-
-                this.juegos.createGame(roomId, jugador1.id, jugador2.id); 
-                this.io.to(roomId).emit('gameStart', { roomId, turn: 'X' });
+                this.juegos.iniciarJuego(this.ListaDeEspera, this.JugadoresEnJuego);
             }
 
             socket.on('makeMove', (data) => {
@@ -40,8 +31,9 @@ class Sockets {
 
                     if (winner) {
                         this.io.to(roomId).emit('gameEnd', { winner });
-                        this.juegos.endGame(roomId);
                         console.log(`Juego terminado`);
+
+                        this.juegos.removerJugadorPerdedor(socket.id, roomId, this.ListaDeEspera, this.JugadoresEnJuego);
 
                     } else if (isDraw) {
                         this.io.to(roomId).emit('gameEnd', { winner: 'Empate' });
@@ -54,7 +46,6 @@ class Sockets {
                 }
             });
 
-            // Manejar reinicio del juego
             socket.on('resetGame', () => {
                 const roomId = [...socket.rooms].find(room => room !== socket.id);
                 if (roomId) {
@@ -64,20 +55,21 @@ class Sockets {
                 }
             });
 
-            // Manejar desconexión de jugadores
             socket.on('disconnect', () => {
                 console.log('Jugador desconectado:', socket.id);
 
-                // Eliminar de la lista de espera
                 this.ListaDeEspera = this.ListaDeEspera.filter(player => player.id !== socket.id);
                 console.log('Lista de espera actual:', this.ListaDeEspera.map(s => s.id));
 
-                // Terminar la partida si el jugador estaba en una
                 const roomId = [...socket.rooms].find(room => room !== socket.id);
                 if (roomId && this.juegos.activeGames[roomId]) {
-                    console.log(`Juego terminado en la sala ${roomId}, el oponente se desconectó`);
                     this.io.to(roomId).emit('gameEnd', { message: 'El oponente se desconectó' });
                     this.juegos.endGame(roomId);
+                    //Si gana se va a el usuario a la lista de espera
+                    this.juegos.removerJugadorPerdedor(socket.id, roomId, this.ListaDeEspera, this.JugadoresEnJuego);
+
+                    console.log(`Juego terminado en la sala ${roomId}, el oponente se desconectó`);
+
                 }
             });
         });

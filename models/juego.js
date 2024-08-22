@@ -10,20 +10,19 @@ const WINNER_COMBOS = [
 ];
 
 class Juegos {
-    constructor() {
+    constructor(io) {
         this.activeGames = {};
+        this.io = io; 
     }
 
-    // Crear un juego con dos jugadores
     createGame(roomId, jugador1, jugador2) {
         this.activeGames[roomId] = {
             board: Array(9).fill(null),
             turn: 'X',
-            players: [jugador1, jugador2], // Almacena los dos jugadores
+            players: [jugador1, jugador2],
         };
     }
 
-    // Realizar un movimiento en el juego
     makeMove(roomId, index, jugadorId) {
         const juego = this.activeGames[roomId];
         
@@ -41,7 +40,6 @@ class Juegos {
         return null;
     }
 
-    // Verificar si hay un ganador
     checkWinner(board) {
         for (const combo of WINNER_COMBOS) {
             const [a, b, c] = combo;
@@ -52,12 +50,10 @@ class Juegos {
         return null;
     }
 
-    // Terminar el juego
     endGame(roomId) {
         delete this.activeGames[roomId];
     }
 
-    // Reiniciar el juego
     resetGame(roomId) {
         if (this.activeGames[roomId]) {
             const players = this.activeGames[roomId].players;
@@ -66,6 +62,43 @@ class Juegos {
                 turn: 'X',
                 players: players,
             };
+        }
+    }
+
+    iniciarJuego(ListaDeEspera, JugadoresEnJuego) {
+        if (ListaDeEspera.length >= 2) {
+            const jugador1 = ListaDeEspera.shift();
+            const jugador2 = ListaDeEspera.shift(); 
+
+            const roomId = `${jugador1.id}+${jugador2.id}`; 
+            jugador1.join(roomId); 
+            jugador2.join(roomId); 
+
+            JugadoresEnJuego.push({ id: jugador1.id, roomId });
+            JugadoresEnJuego.push({ id: jugador2.id, roomId });
+
+            console.log(`Jugadores emparejados: ${jugador1.id} y ${jugador2.id}`);
+
+            this.createGame(roomId, jugador1.id, jugador2.id);
+            this.io.to(roomId).emit('gameStart', { roomId, turn: 'X' });
+        }
+    }
+
+    removerJugadorPerdedor(perdedorId, roomId, ListaDeEspera, JugadoresEnJuego) {
+        JugadoresEnJuego = JugadoresEnJuego.filter(player => player.id !== perdedorId);
+
+        if (ListaDeEspera.length > 0) {
+            const nuevoJugador = ListaDeEspera.shift();
+            nuevoJugador.join(roomId);
+
+            JugadoresEnJuego.push({ id: nuevoJugador.id, roomId });
+
+            this.resetGame(roomId);
+            this.io.to(roomId).emit('gameReset', { board: Array(9).fill(null), turn: 'X' });
+            console.log(`Nuevo jugador ${nuevoJugador.id} se unió a la sala ${roomId}`);
+        } else {
+            this.endGame(roomId);
+            console.log(`No hay más jugadores en la lista de espera. El juego en la sala ${roomId} ha terminado.`);
         }
     }
 }
