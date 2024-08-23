@@ -36,14 +36,15 @@ class Sockets {
                         this.juegos.removerJugadorPerdedor(socket.id, roomId, this.ListaDeEspera, this.JugadoresEnJuego);
             
                     } else if (isDraw) {
-                        this.io.to(roomId).emit('gameEnd', { winner: 'Empate' });
                         this.juegos.endGame(roomId);
                         console.log(`fue empate`);
+
             
                         this.juegos.removerJugadoresEmpate(roomId, this.ListaDeEspera, this.JugadoresEnJuego);
                         this.juegos.resetGame(roomId);
+                        this.io.to(roomId).emit('gameEnd', { winner: 'Empate' });
+
                         this.io.to(roomId).emit('gameReset', { board: Array(9).fill(null), turn: 'X' });
-                        console.log(`Nuevo jugador ${nuevoJugador.id} se unió a la sala ${roomId}`);
             
                     } else {
                         this.io.to(roomId).emit('updateBoard', { board, turn });
