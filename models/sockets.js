@@ -84,20 +84,19 @@ class Sockets {
 
         // Mueve al jugador actual de la lista de espera a la lista de espectadores
         socket.on('moverAEspectadores', () => {
-            this.juegos.moverAEspectadores(socket.id, this.ListaDeEspera, this.ListaDeEspectadores, () => {
-                this.emitirListaDeEspera();
-                this.emitirListaDeEspectadores();
-                this.emitirConteoDeEspectadores();
-            });
+            this.juegos.moverAEspectadores(socket.id, this.ListaDeEspera, this.ListaDeEspectadores);
+            this.emitirListaDeEspera();
+            this.emitirListaDeEspectadores();
+            this.emitirConteoDeEspectadores();
         });
 
         // Mueve al jugador actual de la lista de espectadores a la lista de espera
 
         socket.on('moverAListaEspera', () => {
-            this.juegos.moverAListaDeEspera(socket.id, this.ListaDeEspectadores, this.ListaDeEspera, () => {
-                this.emitirListaDeEspera();
-                this.emitirConteoDeEspectadores();
-            });
+            this.juegos.moverAListaDeEspera(socket.id, this.ListaDeEspectadores, this.ListaDeEspera);
+            this.emitirListaDeEspera();
+            this.emitirListaDeEspectadores();
+            this.emitirConteoDeEspectadores();
         });
 
     }

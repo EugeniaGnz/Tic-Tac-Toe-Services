@@ -140,25 +140,23 @@ class Juegos {
             }
         }
         //funcion para irse a la lista de espectadores
-    moverAEspectadores(jugadorId, ListaDeEspera, ListaDeEspectadores, emitirActualizacion) {
-        const index = ListaDeEspera.findIndex(jugador => jugador.id === jugadorId);
-        if (index !== -1) {
-            const [jugador] = ListaDeEspera.splice(index, 1);
+    moverAEspectadores(jugadorId, ListaDeEspera, ListaDeEspectadores) {
+        const jugadorIndex = ListaDeEspera.findIndex(j => j.id === jugadorId);
+        if (jugadorIndex !== -1) {
+            const [jugador] = ListaDeEspera.splice(jugadorIndex, 1);
             ListaDeEspectadores.push(jugador);
-            if (emitirActualizacion) emitirActualizacion();
-            console.log(`Jugador ${jugadorId} movido a espectadores`);
+            console.log(`Jugador ${jugadorId} movido a espectadores.`);
         }
     }
 
     //Funcion para mover a la lista de espera 
 
-    moverAListaDeEspera(jugadorId, ListaDeEspectadores, ListaDeEspera, emitirActualizacion) {
-        const index = ListaDeEspectadores.findIndex(jugador => jugador.id === jugadorId);
-        if (index !== -1) {
-            const [jugador] = ListaDeEspectadores.splice(index, 1);
-            ListaDeEspera.push(jugador);
-            if (emitirActualizacion) emitirActualizacion();
-            console.log(`Jugador ${jugadorId} movido a lista de espera`);
+    moverAListaDeEspera(jugadorId, ListaDeEspectadores, ListaDeEspera) {
+        const espectadorIndex = ListaDeEspectadores.findIndex(j => j.id === jugadorId);
+        if (espectadorIndex !== -1) {
+            const [espectador] = ListaDeEspectadores.splice(espectadorIndex, 1);
+            ListaDeEspera.push(espectador);
+            console.log(`Espectador ${jugadorId} movido a lista de espera.`);
         }
     }
 
