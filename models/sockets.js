@@ -16,24 +16,27 @@ class Sockets {
             console.log('Jugador conectado:', socket.id);
 
             socket.on('login', ({ username, role }) => {
-                socket.username = username;
-                socket.role = role;
+                // socket.username = username;
+                // socket.role = role;
 
-                if (role === 'player') {
-                    this.ListaDeEspera.push(socket);
-                    console.log(`Jugador ${username} añadido a la lista de espera.`);
+                // if (role === 'player') {
+                //     this.ListaDeEspera.push(socket);
+                //     console.log(`Jugador ${username} añadido a la lista de espera.`);
 
-                    if (this.ListaDeEspera.length >= 2) {
-                        this.juegos.iniciarJuego(this.ListaDeEspera, this.JugadoresEnJuego);
-                    }
-                } else if (role === 'spectator') {
-                    this.ListaDeEspectadores.push(socket);
-                    console.log(`Espectador ${username} añadido a la lista de espectadores.`);
-                }
+                //     if (this.ListaDeEspera.length >= 2) {
+                //         this.juegos.iniciarJuego(this.ListaDeEspera, this.JugadoresEnJuego);
+                //     }
+                // } else if (role === 'spectator') {
+                //     this.ListaDeEspectadores.push(socket);
+                //     console.log(`Espectador ${username} añadido a la lista de espectadores.`);
+                // }
 
-                this.emitirListaDeEspera();
-                this.emitirListaDeEspectadores();
-                this.emitirConteoDeEspectadores();
+                // this.io.to(socket.id).emit('IdJugador', {id: socket.id});
+                // this.emitirListaDeEspera();
+                // this.emitirListaDeEspectadores();
+                // this.emitirConteoDeEspectadores();
+
+                this.crearSalas(socket, role);
             });
 
             socket.on('makeMove', (data) => {
@@ -44,7 +47,7 @@ class Sockets {
                     const { board, turn, winner, isDraw } = moveResult;
 
                     if (winner) {
-                        this.io.to(roomId).emit('gameEnd', { winner });
+                        this.io.to(roomId).emit('gameEnd', { winner, id: socket.id });
                         console.log('Juego terminado');
                         this.juegos.removerJugadorPerdedor(socket.id, roomId, this.ListaDeEspera, this.JugadoresEnJuego);
                     } else if (isDraw) {
@@ -106,9 +109,11 @@ class Sockets {
 
             socket.on('moverAListaEspera', () => {
                 this.juegos.moverAListaDeEspera(socket.id, this.ListaDeEspectadores, this.ListaDeEspera);
+                // this.ListaDeEspera.push({id: socket.id, username: socket.username});
                 this.emitirListaDeEspera();
                 this.emitirListaDeEspectadores();
                 this.emitirConteoDeEspectadores();
+                console.log(this.ListaDeEspera);
             });
             socket.on('leaveGame', () => {
                 const roomId = [...socket.rooms].find(room => room !== socket.id);
@@ -122,6 +127,12 @@ class Sockets {
                   this.emitirConteoDeEspectadores();
                 }
               });
+
+
+
+              socket.on('crearSalas', (role) => {
+                this.crearSalas(socket, role);
+              })
               
         });
     }
@@ -137,6 +148,27 @@ class Sockets {
     emitirConteoDeEspectadores() {
         const conteoEspectadores = this.ListaDeEspectadores.length;
         this.io.emit('actualizarConteoDeEspectadores', { conteo: conteoEspectadores });
+    }
+
+
+    crearSalas(socket, role) {
+        if (role === 'player') {
+            this.ListaDeEspera.push(socket);
+            console.log(`Jugador ${socket.username} añadido a la lista de espera.`);
+
+            console.log(this.ListaDeEspera);
+
+            if (this.ListaDeEspera.length >= 2) {
+                this.juegos.iniciarJuego(this.ListaDeEspera, this.JugadoresEnJuego);
+            }
+        } else if (role === 'spectator') {
+            this.ListaDeEspectadores.push(socket);
+            console.log(`Espectador ${socket.username} añadido a la lista de espectadores.`);
+        }
+
+        this.emitirListaDeEspera();
+        this.emitirListaDeEspectadores();
+        this.emitirConteoDeEspectadores();
     }
 }
 
