@@ -110,6 +110,19 @@ class Sockets {
                 this.emitirListaDeEspectadores();
                 this.emitirConteoDeEspectadores();
             });
+            socket.on('leaveGame', () => {
+                const roomId = [...socket.rooms].find(room => room !== socket.id);
+                if (roomId) {
+                  console.log('Jugador ha dejado el juego');
+                  this.juegos.endGame(roomId);
+                  this.juegos.moverAListaDeEspera(socket.id, this.ListaDeEspectadores, this.ListaDeEspera);
+                  this.io.to(roomId).emit('gameEnd', { message: 'El jugador ha dejado el juego.' });
+                  this.emitirListaDeEspera();
+                  this.emitirListaDeEspectadores();
+                  this.emitirConteoDeEspectadores();
+                }
+              });
+              
         });
     }
 
@@ -127,7 +140,6 @@ class Sockets {
     }
 }
 
-module.exports = Sockets;
 
 
 module.exports = Sockets;
