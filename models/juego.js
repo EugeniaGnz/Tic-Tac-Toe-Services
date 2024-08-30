@@ -15,6 +15,12 @@ class Juegos {
         this.io = io;
     }
 
+    getActiveGames() {
+        return this.activeGames;
+    }
+
+
+
     createGame(roomId, jugador1, jugador2) {
         this.activeGames[roomId] = {
             board: Array(9).fill(null),
@@ -85,6 +91,12 @@ class Juegos {
             this.createGame(roomId, jugador1, jugador2);
             this.io.to(roomId).emit('gameStart', { roomId, turn: 'X' });
         }
+        console.log(this.activeGames);
+        console.log("Activeames  lenght", this.activeGames.length);
+    }
+
+    agregarEspectador(roomId, jugador){
+        this.activeGames[roomId].players.push({ id: jugador.id, name: jugador.name });
     }
 
     removerJugadorPerdedor(perdedorId, roomId, ListaDeEspera, JugadoresEnJuego) {

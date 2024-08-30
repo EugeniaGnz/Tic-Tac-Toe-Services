@@ -14,9 +14,17 @@ class Sockets {
     socketEvents() {
         this.io.on('connection', (socket) => {
             console.log('Jugador conectado:', socket.id);
+            
+            socket.on('getActiveGamessss', () => {
+                socket.emit('getActiveGames', this.juegos.getActiveGames())
+            });
+
+            socket.on("AgregarEspecador", (salaId) => {
+                this.juegos.agregarEspectador(salaId, socket);
+            })
 
             socket.on('login', ({ username, role }) => {
-                // socket.username = username;
+                socket.username = username;
                 // socket.role = role;
 
                 // if (role === 'player') {
@@ -54,15 +62,18 @@ class Sockets {
                         this.juegos.endGame(roomId);
                         console.log('Fue empate');
                         this.juegos.removerJugadoresEmpate(roomId, this.ListaDeEspera, this.JugadoresEnJuego);
-                        this.juegos.resetGame(roomId);
                         this.io.to(roomId).emit('gameEnd', { winner: 'Empate' });
-                        this.io.to(roomId).emit('gameReset', { board: Array(9).fill(null), turn: 'X' });
+                        // this.io.to(roomId).emit('gameReset', { board: Array(9).fill(null), turn: 'X' });
                     } else {
                         this.io.to(roomId).emit('updateBoard', { board, turn });
                     }
 
                     // Transmitir la actualización del tablero a los espectadores
-                    this.io.to(roomId).emit('updateBoard', { board, turn });
+                    // this.io.to(roomId).emit('updateBoard', { board, turn });
+                    // console.log(this.juegos.getActiveGames());
+                    // this.juegos.getActiveGames()[roomId].players.forEach(element => {
+                    //     this.io.to(element.id).emit('updateBoard', { board, turn });
+                    // });
                 }
             });
 
@@ -113,7 +124,7 @@ class Sockets {
                 this.emitirListaDeEspera();
                 this.emitirListaDeEspectadores();
                 this.emitirConteoDeEspectadores();
-                console.log(this.ListaDeEspera);
+                // console.log(this.ListaDeEspera);
             });
             socket.on('leaveGame', () => {
                 const roomId = [...socket.rooms].find(room => room !== socket.id);
@@ -156,7 +167,7 @@ class Sockets {
             this.ListaDeEspera.push(socket);
             console.log(`Jugador ${socket.username} añadido a la lista de espera.`);
 
-            console.log(this.ListaDeEspera);
+            // console.log(this.ListaDeEspera);
 
             if (this.ListaDeEspera.length >= 2) {
                 this.juegos.iniciarJuego(this.ListaDeEspera, this.JugadoresEnJuego);
