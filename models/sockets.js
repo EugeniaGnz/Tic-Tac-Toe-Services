@@ -20,30 +20,13 @@ class Sockets {
             });
 
             socket.on("AgregarEspecador", (salaId) => {
+                socket.join(salaId);
                 this.juegos.agregarEspectador(salaId, socket);
+                socket.emit('updateBoard', { board: this.juegos.getActiveGames()[salaId].board });
             })
 
             socket.on('login', ({ username, role }) => {
                 socket.username = username;
-                // socket.role = role;
-
-                // if (role === 'player') {
-                //     this.ListaDeEspera.push(socket);
-                //     console.log(`Jugador ${username} añadido a la lista de espera.`);
-
-                //     if (this.ListaDeEspera.length >= 2) {
-                //         this.juegos.iniciarJuego(this.ListaDeEspera, this.JugadoresEnJuego);
-                //     }
-                // } else if (role === 'spectator') {
-                //     this.ListaDeEspectadores.push(socket);
-                //     console.log(`Espectador ${username} añadido a la lista de espectadores.`);
-                // }
-
-                // this.io.to(socket.id).emit('IdJugador', {id: socket.id});
-                // this.emitirListaDeEspera();
-                // this.emitirListaDeEspectadores();
-                // this.emitirConteoDeEspectadores();
-
                 this.crearSalas(socket, role);
             });
 
@@ -54,6 +37,10 @@ class Sockets {
                 if (moveResult) {
                     const { board, turn, winner, isDraw } = moveResult;
 
+                    this.juegos.getActiveGames()[roomId].players.forEach(player => {
+                        console.log(player.id);
+                        this.io.to(player.id).emit('updateboard', { board, turn });
+                    });
                     if (winner) {
                         this.io.to(roomId).emit('gameEnd', { winner, id: socket.id });
                         console.log('Juego terminado');
@@ -69,8 +56,7 @@ class Sockets {
                     }
 
                     // Transmitir la actualización del tablero a los espectadores
-                    // this.io.to(roomId).emit('updateBoard', { board, turn });
-                    // console.log(this.juegos.getActiveGames());
+                    socket.emit('updateBoard', { board, turn });
                     // this.juegos.getActiveGames()[roomId].players.forEach(element => {
                     //     this.io.to(element.id).emit('updateBoard', { board, turn });
                     // });
