@@ -19,14 +19,17 @@ class Juegos {
         this.activeGames[roomId] = {
             board: Array(9).fill(null),
             turn: 'X',
-            players: [jugador1, jugador2],
+            players: [
+                { id: jugador1.id, name: jugador1.name },
+                { id: jugador2.id, name: jugador2.name }
+            ],
         };
     }
 
     makeMove(roomId, index, jugadorId) {
         const juego = this.activeGames[roomId];
 
-        if (juego && juego.board[index] === null && juego.turn === (jugadorId === juego.players[0] ? 'X' : 'O')) {
+        if (juego && juego.board[index] === null && juego.turn === (jugadorId === juego.players[0].id ? 'X' : 'O')) {
             juego.board[index] = juego.turn;
             juego.turn = juego.turn === 'X' ? 'O' : 'X';
 
@@ -77,9 +80,9 @@ class Juegos {
             JugadoresEnJuego.push({ id: jugador1.id, roomId });
             JugadoresEnJuego.push({ id: jugador2.id, roomId });
 
-            console.log(`Jugadores entrando a la sala: ${jugador1.id} y ${jugador2.id}`);
+            console.log(`Jugadores entrando a la sala: ${jugador1.id} (${jugador1.username}) y ${jugador2.id} (${jugador2.username})`);
 
-            this.createGame(roomId, jugador1.id, jugador2.id);
+            this.createGame(roomId, jugador1, jugador2);
             this.io.to(roomId).emit('gameStart', { roomId, turn: 'X' });
         }
     }
@@ -90,7 +93,7 @@ class Juegos {
         const perdedorSocket = this.io.sockets.sockets.get(perdedorId);
         if (perdedorSocket) {
             ListaDeEspera.push(perdedorSocket);
-            console.log(`Jugador ${perdedorId} ha sido añadido a la lista el perdedor`);
+            console.log(`Jugador ${perdedorId} (${perdedorSocket.name}) ha sido añadido a la lista de espera.`);
         }
 
         if (ListaDeEspera.length > 0) {
@@ -101,66 +104,62 @@ class Juegos {
 
         } else {
             this.endGame(roomId);
-            console.log(`No hay más jugadores en la lista de espera. `);
+            console.log(`No hay más jugadores en la lista de espera.`);
         }
     }
 
     removerJugadoresEmpate(roomId, ListaDeEspera, JugadoresEnJuego) {
-            const juego = this.activeGames[roomId];
+        const juego = this.activeGames[roomId];
 
-            if (juego) {
-                const [jugador1Id, jugador2Id] = juego.players;
+        if (juego) {
+            const [jugador1, jugador2] = juego.players;
 
-                JugadoresEnJuego = JugadoresEnJuego.filter(player => player.id !== jugador1Id && player.id !== jugador2Id);
+            JugadoresEnJuego = JugadoresEnJuego.filter(player => player.id !== jugador1.id && player.id !== jugador2.id);
 
-                const jugador1Socket = this.io.sockets.sockets.get(jugador1Id);
-                const jugador2Socket = this.io.sockets.sockets.get(jugador2Id);
+            const jugador1Socket = this.io.sockets.sockets.get(jugador1.id);
+            const jugador2Socket = this.io.sockets.sockets.get(jugador2.id);
 
-                // Añadir ambos jugadores a la lista de espera
-                if (jugador1Socket) {
-                    ListaDeEspera.push(jugador1Socket);
-                    console.log(`Jugador ${jugador1Id} añadido a la lista de espera `);
-                }
-                if (jugador2Socket) {
-                    ListaDeEspera.push(jugador2Socket);
-                    console.log(`Jugador ${jugador2Id} añadido a la lista de espera`);
-                }
+            if (jugador1Socket) {
+                ListaDeEspera.push(jugador1Socket);
+                console.log(`Jugador ${jugador1.id} (${jugador1.name}) añadido a la lista de espera.`);
+            }
+            if (jugador2Socket) {
+                ListaDeEspera.push(jugador2Socket);
+                console.log(`Jugador ${jugador2.id} (${jugador2.name}) añadido a la lista de espera.`);
+            }
 
-                //  Para poder mandar cosas es en menssage
-                if (jugador1Socket) jugador1Socket.emit('gameEnd', { message: 'Empate. se va a lista de espera' });
-                if (jugador2Socket) jugador2Socket.emit('gameEnd', { message: 'Empate. se va a lista de espera' });
+            if (jugador1Socket) jugador1Socket.emit('gameEnd', { message: 'Empate. Se va a lista de espera.' });
+            if (jugador2Socket) jugador2Socket.emit('gameEnd', { message: 'Empate. Se va a lista de espera.' });
 
-                this.endGame(roomId);
+            this.endGame(roomId);
 
-                // Reiniciar el juego  en la lista de espera
-                if (ListaDeEspera.length >= 2) {
-                    this.iniciarJuego(ListaDeEspera, JugadoresEnJuego);
-                    console.log(`Se ha reiniciado el juego con los jugadores disponibles en la lista de espera.`);
-                }
+            if (ListaDeEspera.length >= 2) {
+                this.iniciarJuego(ListaDeEspera, JugadoresEnJuego);
+                console.log(`Se ha reiniciado el juego con los jugadores disponibles en la lista de espera.`);
             }
         }
-        //funcion para irse a la lista de espectadores
+    }
+
     moverAEspectadores(jugadorId, ListaDeEspera, ListaDeEspectadores) {
         const jugadorIndex = ListaDeEspera.findIndex(j => j.id === jugadorId);
         if (jugadorIndex !== -1) {
             const [jugador] = ListaDeEspera.splice(jugadorIndex, 1);
             ListaDeEspectadores.push(jugador);
-            console.log(`Jugador ${jugadorId} movido a espectadores.`);
+            console.log(`Jugador ${jugadorId} (${jugador.name}) movido a espectadores.`);
         }
     }
-
-    //Funcion para mover a la lista de espera 
 
     moverAListaDeEspera(jugadorId, ListaDeEspectadores, ListaDeEspera) {
         const espectadorIndex = ListaDeEspectadores.findIndex(j => j.id === jugadorId);
         if (espectadorIndex !== -1) {
             const [espectador] = ListaDeEspectadores.splice(espectadorIndex, 1);
             ListaDeEspera.push(espectador);
-            console.log(`Espectador ${jugadorId} movido a lista de espera.`);
+            console.log(`Espectador ${jugadorId} (${espectador.name}) movido a lista de espera.`);
         }
     }
-
-
 }
+
+module.exports = Juegos;
+
 
 module.exports = Juegos;
